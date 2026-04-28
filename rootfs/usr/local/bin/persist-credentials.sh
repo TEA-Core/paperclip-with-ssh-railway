@@ -8,13 +8,19 @@
 # that shared location. One OAuth login covers everything.
 set -eu
 
+# Railway mounts the volume at /paperclip as root-owned by default. The
+# upstream Paperclip template's entrypoint chowned the entire /paperclip tree
+# to node:node before starting the app — we must do the same here, otherwise
+# Paperclip crashes with EACCES trying to mkdir /paperclip/instances/...
+mkdir -p /paperclip/instances/default/logs
+chown -R node:node /paperclip
+
 SHARED=/paperclip/shared-creds
 mkdir -p "$SHARED/claude" "$SHARED/codex" "$SHARED/opencode" "$SHARED/gh" "$SHARED/git"
 
-# /paperclip is the `node` user's HOME (per ENV in Dockerfile). Make sure node
-# can read/write the shared dir.
+# Make sure node can read/write the shared dir specifically.
 chown -R node:node "$SHARED"
-chmod 700 "$SHARED"
+chmod 750 "$SHARED"
 
 # Helper: replace a target dir with a symlink to the shared location, but
 # preserve any existing data on first run by moving it over.
