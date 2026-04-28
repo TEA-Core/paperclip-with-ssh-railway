@@ -1,0 +1,12 @@
+#!/command/with-contenv sh
+# Paperclip web app, running as the `node` user with cleared capabilities.
+# Mirrors the original entrypoint.sh from the upstream template.
+
+unset SUDO_USER SUDO_UID SUDO_GID SUDO_COMMAND 2>/dev/null || true
+
+exec setpriv \
+    --reuid=node \
+    --regid=node \
+    --init-groups \
+    --inh-caps=-all \
+    node /wrapper/src/server.js
