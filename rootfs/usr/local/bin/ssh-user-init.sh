@@ -7,6 +7,15 @@ set -eu
 : "${SSH_USERNAME:=dev}"
 : "${AUTHORIZED_KEYS:=}"
 
+# DIAGNOSTIC v3: log everything we can about the env situation so we can see
+# what's actually present in the running container.
+echo "[ssh-user-init] DIAG v3: AUTHORIZED_KEYS direct length=${#AUTHORIZED_KEYS}"
+echo "[ssh-user-init] DIAG v3: /proc/1/environ readable: $([ -r /proc/1/environ ] && echo YES || echo NO)"
+if [ -r /proc/1/environ ]; then
+    echo "[ssh-user-init] DIAG v3: env var names in /proc/1/environ:"
+    tr '\0' '\n' < /proc/1/environ | sed 's/=.*$//' | sort | sed 's/^/[ssh-user-init] DIAG v3:   /'
+fi
+
 # s6-overlay's with-contenv strips multi-line environment variables when it
 # materializes them under /var/run/s6/container_environment. Multi-line values
 # (like multiple SSH keys joined by newlines) get truncated or dropped. As a
@@ -14,6 +23,7 @@ set -eu
 # preserves the original container env intact.
 if [ -z "$AUTHORIZED_KEYS" ] && [ -r /proc/1/environ ]; then
     AUTHORIZED_KEYS=$(awk -v RS='\0' -F= '/^AUTHORIZED_KEYS=/{ sub(/^AUTHORIZED_KEYS=/, ""); print }' /proc/1/environ)
+    echo "[ssh-user-init] DIAG v3: after /proc fallback, AUTHORIZED_KEYS length=${#AUTHORIZED_KEYS}"
 fi
 
 if [ -z "$AUTHORIZED_KEYS" ]; then
