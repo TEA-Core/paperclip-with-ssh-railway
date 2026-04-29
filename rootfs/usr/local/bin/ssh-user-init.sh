@@ -7,6 +7,15 @@ set -eu
 : "${SSH_USERNAME:=dev}"
 : "${AUTHORIZED_KEYS:=}"
 
+# s6-overlay's with-contenv strips multi-line environment variables when it
+# materializes them under /var/run/s6/container_environment. Multi-line values
+# (like multiple SSH keys joined by newlines) get truncated or dropped. As a
+# workaround, fall back to reading directly from PID 1's /proc/1/environ, which
+# preserves the original container env intact.
+if [ -z "$AUTHORIZED_KEYS" ] && [ -r /proc/1/environ ]; then
+    AUTHORIZED_KEYS=$(awk -v RS='\0' -F= '/^AUTHORIZED_KEYS=/{ sub(/^AUTHORIZED_KEYS=/, ""); print }' /proc/1/environ)
+fi
+
 if [ -z "$AUTHORIZED_KEYS" ]; then
     echo "[ssh-user-init] ERROR: AUTHORIZED_KEYS env var is required (key-only auth)." >&2
     echo "[ssh-user-init] Set AUTHORIZED_KEYS to one or more SSH public keys (newline-separated)." >&2
