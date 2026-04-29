@@ -64,8 +64,11 @@ mkdir -p "$PERSIST_HOME/.ssh" "$PERSIST_HOME/dev" "$PERSIST_HOME/.config"
 chown -R "${SSH_USERNAME}:${SSH_USERNAME}" "$PERSIST_HOME"
 chmod 700 "$PERSIST_HOME/.ssh"
 
-# Authorized keys
-echo "$AUTHORIZED_KEYS" > "$PERSIST_HOME/.ssh/authorized_keys"
+# Authorized keys.
+# Railway sometimes serializes multi-line values with literal "\n" sequences
+# rather than real newlines. Normalize: convert "\n" → real newline, then trim
+# stray empty lines. printf %b interprets escape sequences.
+printf '%b\n' "$AUTHORIZED_KEYS" | sed '/^$/d' > "$PERSIST_HOME/.ssh/authorized_keys"
 chown "${SSH_USERNAME}:${SSH_USERNAME}" "$PERSIST_HOME/.ssh/authorized_keys"
 chmod 600 "$PERSIST_HOME/.ssh/authorized_keys"
 
