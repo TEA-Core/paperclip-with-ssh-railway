@@ -37,6 +37,12 @@ FROM node:22-bookworm
 ENV NODE_ENV=production
 ENV CLAUDE_CODE_BUBBLEWRAP=1
 
+# Tell s6-overlay to preserve the container startup environment and make it
+# available to services via `with-contenv`. Without this, only PATH leaks
+# through to oneshots/longruns and the Railway-injected variables (like
+# AUTHORIZED_KEYS, DATABASE_URL, etc.) never reach the init scripts.
+ENV S6_KEEP_ENV=1
+
 # Match upstream defaults so Paperclip's agent tooling, OpenCode, and config
 # paths behave consistently.
 ENV HOME=/paperclip \
